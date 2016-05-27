@@ -1,21 +1,34 @@
-# gfwlist2pac
+# gfwlist2pac -- python3 ONLY
 
 fork from clowwindy's gfwlist2pac
 
-usage:
+##Automatically update the PAC for ShadowsocksX
 
+Thanks to VincentSit's [bash script](https://gist.github.com/VincentSit/b5b112d273513f153caf23a9da112b3a)  
+I modified it a little, and It's also ONLY tested on OS X.  
+
+Before executing, make sure it has the permission, or you can execute the following code first:  
 
 ```
-python main.py -i gfwlist.txt -f ss.pac -p "SOCKS5 192.168.1.17:1080;" --user-rule myrule --precise
+chmod +x update_gfwlist.sh
 ```
 
+and then:
+
 ```
-pip install gfwlist2pac
+./update_gfwlist.sh
+```
 
-   usage: gfwlist2pac [-h] [-i GFWLIST] -f PAC -p PROXY [--user-rule USER_RULE]
-                  [--precise]
+##The basic usage:
 
-   optional arguments:
+If you don't wanna use the automatically update bash script or it doesn't work for some reason, you can run the python script `main.py` manually.
+
+Example & Usage:
+
+```
+python3 main.py -i gfwlist.txt -f gfwlist.js -p "SOCKS5 127.0.0.1:1080; DIRECT;" --user-rule myrule --precise
+
+optional arguments:
      -h, --help            show this help message and exit
      -i GFWLIST, --input GFWLIST
                            path to gfwlist
@@ -31,7 +44,7 @@ pip install gfwlist2pac
 
 ## 规则
 
-http://codelife.me/blog/2013/04/06/convert-gfwlist-to-pac/
+[http://codelife.me/blog/2013/04/06/convert-gfwlist-to-pac/](http://codelife.me/blog/2013/04/06/convert-gfwlist-to-pac/)
 
 ```
 简单说明如下：
@@ -43,7 +56,5 @@ http://codelife.me/blog/2013/04/06/convert-gfwlist-to-pac/
  || 标记，如 ||example.com 则http://example.com、https://example.com、ftp://example.com等地址均满足条件
  注释 ! 如 ! Comment
 
- 更详细说明 请访问 http://adblockplus.org/en/filters
-
 ```
-
+更详细说明 请访问 [http://adblockplus.org/en/filters](http://adblockplus.org/en/filters)

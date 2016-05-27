@@ -1,12 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import pkgutil
-import urlparse
+import urllib.parse as urlpar
 import json
 import logging
-import urllib2
+import urllib.request as urlreq
 from argparse import ArgumentParser
+import base64
 
 __all__ = ['main']
 
@@ -33,7 +34,7 @@ def parse_args():
     return parser.parse_args()
 
 def get_data_from_file(file_path):
-    with open(file_path, 'rb') as f:
+    with open(file_path, 'r') as f:
         builtin_rules = f.read()
         return builtin_rules
 
@@ -43,7 +44,7 @@ def decode_gfwlist(content):
     try:
         if '.' in content:
             raise Exception()
-        return content.decode('base64')
+        return base64.b64decode(content).decode('utf-8')
     except:
         return content
 
@@ -53,7 +54,7 @@ def get_hostname(something):
         # quite enough for GFW
         if not something.startswith('http:'):
             something = 'http://' + something
-        r = urlparse.urlparse(something)
+        r = urlpar.urlparse(something)
         return r.hostname
     except Exception as e:
         logging.error(e)
@@ -68,7 +69,7 @@ def add_domain_to_set(s, something):
 
 def combine_lists(content, user_rule=None):
     gfwlist = get_data_from_file('resources/builtin.txt').splitlines(False)
-    gfwlist = content.splitlines(False)
+    gfwlist.extend(content.splitlines(False))
     if user_rule:
         gfwlist.extend(user_rule.splitlines(False))
     return gfwlist
@@ -77,23 +78,15 @@ def combine_lists(content, user_rule=None):
 def parse_gfwlist(gfwlist):
     domains = set()
     for line in gfwlist:
+        if line.startswith(('!','[','@')):
+            # ignore white list
+            continue
         if line.find('.*') >= 0:
             continue
         elif line.find('*') >= 0:
             line = line.replace('*', '/')
-        if line.startswith('||'):
-            line = line.lstrip('||')
-        elif line.startswith('|'):
-            line = line.lstrip('|')
-        elif line.startswith('.'):
-            line = line.lstrip('.')
-        if line.startswith('!'):
-            continue
-        elif line.startswith('['):
-            continue
-        elif line.startswith('@'):
-            # ignore white list
-            continue
+        if line.startswith(('|','.')):
+            line = line.lstrip('|.')
         add_domain_to_set(domains, line)
     return domains
 
@@ -107,7 +100,7 @@ def reduce_domains(domains):
     for domain in domains:
         domain_parts = domain.split('.')
         last_root_domain = None
-        for i in xrange(0, len(domain_parts)):
+        for i in range(0, len(domain_parts)):
             root_domain = '.'.join(domain_parts[len(domain_parts) - i - 1:])
             if i == 0:
                 if not tlds.__contains__(root_domain):
@@ -138,15 +131,13 @@ def generate_pac_fast(domains, proxy):
 def generate_pac_precise(rules, proxy):
     def grep_rule(rule):
         if rule:
-            if rule.startswith('!'):
-                return None
-            if rule.startswith('['):
+            if rule.startswith(('!','[')):
                 return None
             return rule
         return None
     # render the pac file
     proxy_content = get_data_from_file('resources/abp.js')
-    rules = filter(grep_rule, rules)
+    rules = list(filter(grep_rule, rules))
     proxy_content = proxy_content.replace('__PROXY__', json.dumps(str(proxy)))
     proxy_content = proxy_content.replace('__RULES__',
                                           json.dumps(rules, indent=2))
@@ -157,21 +148,21 @@ def main():
     args = parse_args()
     user_rule = None
     if (args.input):
-        with open(args.input, 'rb') as f:
+        with open(args.input, 'r') as f:
             content = f.read()
     else:
-        print 'Downloading gfwlist from %s' % gfwlist_url
-        content = urllib2.urlopen(gfwlist_url, timeout=10).read()
+        print('Downloading gfwlist from %s' % gfwlist_url)
+        content = urlreq.urlopen(gfwlist_url, timeout=10).read().decode('utf-8')
     if args.user_rule:
-        userrule_parts = urlparse.urlsplit(args.user_rule)
+        userrule_parts = urlpar.urlsplit(args.user_rule)
         if not userrule_parts.scheme or not userrule_parts.netloc:
             # It's not an URL, deal it as local file
-            with open(args.user_rule, 'rb') as f:
+            with open(args.user_rule, 'r') as f:
                 user_rule = f.read()
         else:
             # Yeah, it's an URL, try to download it
-            print 'Downloading user rules file from %s' % args.user_rule
-            user_rule = urllib2.urlopen(args.user_rule, timeout=10).read()
+            print('Downloading user rules file from %s' % args.user_rule)
+            user_rule = urlreq.urlopen(args.user_rule, timeout=10).read().decode('utf-8')
 
     content = decode_gfwlist(content)
     gfwlist = combine_lists(content, user_rule)
@@ -181,7 +172,7 @@ def main():
         domains = parse_gfwlist(gfwlist)
         domains = reduce_domains(domains)
         pac_content = generate_pac_fast(domains, args.proxy)
-    with open(args.output, 'wb') as f:
+    with open(args.output, 'w') as f:
         f.write(pac_content)
 
 
