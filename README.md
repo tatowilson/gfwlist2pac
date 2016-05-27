@@ -5,7 +5,7 @@ fork from clowwindy's gfwlist2pac
 ##Automatically update the PAC for ShadowsocksX
 
 Thanks to VincentSit's [bash script](https://gist.github.com/VincentSit/b5b112d273513f153caf23a9da112b3a)  
-I modified it a little, and It's also ONLY tested on OS X.  
+I modified it a little, and It's also ONLY tested on OS X.  
 
 Before executing, make sure it has the permission, or you can execute the following code first:  
 
